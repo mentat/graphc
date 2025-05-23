@@ -22,11 +22,13 @@ export interface {{ type.Name }}Selection {
 }
 {% endfor %}
 {% for name, field in schema.Queries %}
-export async function run{{ cap(name) }}(
+export async function query{{ cap(name) }}({
     {%- for arg in field.Args %}
-    {%- if !forloop.First %}, {% endif %}{{arg.Name}}:{{arg.Type|ts}}
-    {%- if arg.Nullable %} | null{% endif %}
-    {%- endfor -%}, selections: {{ field.Type.Name }}Selection): Promise<GQLResponse<{{field.Type|ts}}>> {
+    {%- if !forloop.First %}, {% endif %}{{arg.Name}}
+    {%- endfor -%}, selections}: {
+    {%- for arg in field.Args %}
+    {%- if !forloop.First %}, {% endif %}{{arg.Name}}{%- if arg.Nullable %}?{% endif %}:{{arg.Type|ts}}
+    {%- endfor -%}, selections: {{ field.Type.Name }}Selection}): Promise<GQLResponse<{{field.Type|ts}}>> {
     let query = "query run{{ cap(name) }} { ";
     for (const item in selections) { 
         if (selections[item] === true) {
@@ -44,4 +46,4 @@ export async function run{{ cap(name) }}(
 {% endfor %}
 
 // early testing...
-runUsers("", "", { isActive: true, mainGroup: { name: true } })
+const users = await queryUsers({ sort: "", selections: { isActive: true, mainGroup: { name: true } }})
