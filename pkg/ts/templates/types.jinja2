@@ -1,0 +1,47 @@
+{% macro nestSelections(name) %}
+{%- set type = getType(name) -%}
+{
+{%- for name, field in type.Fields -%}
+    {{- name}}?:{% if field.Type.Kind.IsScalar() %}boolean{% else %}{{nestSelections(field.Type.Name)}}{% endif %};
+{%- endfor -%}
+}
+{%- endmacro %}
+import { GQLClient, GQLResponse } from "./imports/common"
+
+{% for name, type in schema.Types %}
+export interface {{ name }} {
+    {% for name, field in type.Fields %}
+        {{- name}}{%- if field.Nullable %}?{% endif %}:{{ field.Type|ts }}
+        {%- if field.Repeated %}[]{% endif %};
+    {% endfor %}
+}
+export interface {{ type.Name }}Selection {
+    {% for name, field in type.Fields %}
+        {{- name}}?:{% if field.Type.Kind.IsScalar() %}boolean{% else %}{{nestSelections(field.Type.Name)}}{% endif %};
+    {% endfor %}
+}
+{% endfor %}
+{% for name, field in schema.Queries %}
+export async function run{{ cap(name) }}(
+    {%- for arg in field.Args %}
+    {%- if !forloop.First %}, {% endif %}{{arg.Name}}:{{arg.Type|ts}}
+    {%- if arg.Nullable %} | null{% endif %}
+    {%- endfor -%}, selections: {{ field.Type.Name }}Selection): Promise<GQLResponse<{{field.Type|ts}}>> {
+    let query = "query run{{ cap(name) }} { ";
+    for (const item in selections) { 
+        if (selections[item] === true) {
+            query += item + " ";
+        }
+    }
+    query += "}";
+    const client = new GQLClient();
+    const response: GQLResponse<{{field.Type|ts}}> = await client.post<{{field.Type|ts}}>("", { 
+    {%- for arg in field.Args %}
+    {%- if !forloop.First %}, {% endif %}{{arg.Name}}:{{arg.Name}}
+    {%- endfor -%}});
+    return response;
+}
+{% endfor %}
+
+// early testing...
+runUsers("", "", { isActive: true, mainGroup: { name: true } })
