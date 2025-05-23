@@ -36,3 +36,48 @@ const users = await queryUsers({sort: "-createdAt", selections: {
     }
 })
 ```
+
+Example generated `client.ts` library (unfinished):
+
+```typescript
+import { GQLClient, GQLResponse } from "./imports/common"
+
+export interface Group {
+    name: string;
+}
+
+export interface GroupSelection {
+    name?: boolean;
+}
+
+export interface User {
+    groups: number[];
+    mainGroup: Group;
+    isActive: boolean;
+    firstName: string;
+
+}
+export interface UserSelection {
+    mainGroup?: { name?: boolean; };
+    isActive?: boolean;
+    firstName?: boolean;
+    groups?: boolean;
+
+}
+
+export async function queryUsers({ sort, filter, selections }: { sort: string, filter?: string, selections: UserSelection }): Promise<GQLResponse<User>> {
+    let query = "query runUsers { ";
+    for (const item in selections) {
+        if (selections[item] === true) {
+            query += item + " ";
+        }
+    }
+    query += "}";
+    const client = new GQLClient();
+    const response: GQLResponse<User> = await client.post<User>("", { sort: sort, filter: filter });
+    return response;
+}
+
+// Example function call
+const users = await queryUsers({ sort: "", selections: { isActive: true, mainGroup: { name: true } } })
+```
