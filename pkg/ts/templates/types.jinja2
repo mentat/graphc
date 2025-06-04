@@ -6,7 +6,13 @@
 {%- endfor -%}
 }
 {%- endmacro %}
-import { GQLClient, GQLResponse } from "./imports/common"
+{% macro listArgs(field) %} {
+{%- for arg in field.Args -%}
+    {{- arg.Name}}{% if arg.Nullable %}?{% endif %}:{% if field.Type.Kind.IsScalar() %}{{ field.Type|ts }}{% else %}{% endif %};
+{%- endfor -%}
+}
+{%- endmacro %}
+import { GQLClient, GQLResponse, buildQuery } from "./package/common"
 
 {% for name, type in schema.Types %}
 export interface {{ name }} {
@@ -15,9 +21,11 @@ export interface {{ name }} {
         {%- if field.Repeated %}[]{% endif %};
     {% endfor %}
 }
+
 export interface {{ type.Name }}Selection {
+    [index: string]: any;
     {% for name, field in type.Fields %}
-        {{- name}}?:{% if field.Type.Kind.IsScalar() %}boolean{% else %}{{nestSelections(field.Type.Name)}}{% endif %};
+        {{- name}}?:{% if field.Type.Kind.IsScalar() %}boolean{% if field.Args %} | {{ listArgs(field) }}{% endif %}{% else %}{{ nestSelections(field.Type.Name) }}{% endif %};
     {% endfor %}
 }
 {% endfor %}
@@ -29,13 +37,7 @@ export async function query{{ cap(name) }}({
     {%- for arg in field.Args %}
     {%- if !forloop.First %}, {% endif %}{{arg.Name}}{%- if arg.Nullable %}?{% endif %}:{{arg.Type|ts}}
     {%- endfor -%}, selections: {{ field.Type.Name }}Selection}): Promise<GQLResponse<{{field.Type|ts}}>> {
-    let query = "query run{{ cap(name) }} { ";
-    for (const item in selections) { 
-        if (selections[item] === true) {
-            query += item + " ";
-        }
-    }
-    query += "}";
+    let query = buildQuery("{{name}}", selections);
     const client = new GQLClient();
     const response: GQLResponse<{{field.Type|ts}}> = await client.post<{{field.Type|ts}}>("", { 
     {%- for arg in field.Args %}

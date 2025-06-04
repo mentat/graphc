@@ -28,11 +28,10 @@ need to understand the syntax of GraphQL queries.  The reasons for this are:
 Example typescript client usage:
 
 ```typescript
-
 import { queryUsers } from "./client.ts";
 
 const users = await queryUsers({sort: "-createdAt", selections: {
-    name:true, id: true, groups: {id: true, name: true}
+        name:true, id: true, groups: {id: true, name: true}
     }
 })
 ```
@@ -55,14 +54,13 @@ export interface User {
     mainGroup: Group;
     isActive: boolean;
     firstName: string;
-
 }
+
 export interface UserSelection {
     mainGroup?: { name?: boolean; };
     isActive?: boolean;
     firstName?: boolean;
     groups?: boolean;
-
 }
 
 export async function queryUsers({ sort, filter, selections }: { sort: string, filter?: string, selections: UserSelection }): Promise<GQLResponse<User>> {

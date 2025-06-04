@@ -187,7 +187,30 @@ export class GQLClient extends HttpClientBase {
     }
 }
 
-export function buildQuery() {
+interface Query {
+    [index: string]: boolean | Query;
+}
+
+function recurse(q: Query): string {
+
+    let result = "";
+    let index = 0;
+    for (const key in q) {
+        if (index > 0) {
+            result += ", ";
+        }
+        result += key;
+        if (typeof q[key] === 'object') {
+            result += " { " + recurse(q[key]) + " } ";
+        }
+    }
+    return result;
+}
 
 
+export function buildQuery(name: string, q: Query): string {
+
+    let query = "query " + name + " { " + recurse(q) + " } "
+
+    return query;
 }

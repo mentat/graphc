@@ -20,6 +20,21 @@ func TestTemplate(t *testing.T) {
 						Repeated: false,
 						Nullable: false,
 					},
+					"attributes": {
+						Type: common.TypeDetail{
+							Kind: common.TypeString,
+						},
+						Repeated: true,
+						Nullable: false,
+						Args: []common.Argument{
+							{
+								Name: "limit",
+								Type: common.TypeDetail{
+									Kind: common.TypeInt,
+								},
+							},
+						},
+					},
 				},
 			},
 			"User": {
